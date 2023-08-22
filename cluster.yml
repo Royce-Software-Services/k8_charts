@@ -1,0 +1,7 @@
+apiVersion: k3d.io/v1alpha3
+kind: Simple
+name: template-deployment-app
+ports:
+  - port: 8080:80 # same as `--port '8080:80@loadbalancer'`
+    nodeFilters:
+      - loadbalancer

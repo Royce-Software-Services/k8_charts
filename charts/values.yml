@@ -1,0 +1,4 @@
+# template charts/app-deploy-template -f charts/values.yml
+envFrom:
+  - configMapRef:
+      name: envconfig

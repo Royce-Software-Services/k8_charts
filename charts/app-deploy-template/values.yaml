@@ -1,0 +1,147 @@
+# Default values for app-deploy-template.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: nginx
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+additionalLabels: {}
+
+selectorAdditionalLabels: {}
+
+env: {}
+  # ENVIRONMENT: dev
+  # ANOTHER_VARIABLE: helm
+
+envFrom: []
+  # - secretRef:
+  #     name: secretName
+  # OR
+  # - configMapRef:
+  #     name: configName
+
+volumeMounts: []
+  # - name: envconfig-volume
+  #   mountPath: /var/www/pavemobility/.env
+  #   subPath: etico_env.env
+  #   readOnly: true
+
+volumes: []
+  # - name: envconfig-volume
+  #   configMap:
+  #     name: envconfig
+
+
+containerPorts:
+  - name: http
+    containerPort: 80
+    protocol: TCP
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+
+  servicePort:
+    name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+
+  additionalServicePorts:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+
+ingress:
+  enabled: false
+  className: ""
+  annotations:
+    # kubernetes.io/ingress.class: istio
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+
+istio:
+  enabled: false
+
+  virtualservice:
+    enabled: true
+
+    targetPort: 5000
+
+    hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+    - host: app1.copr-subdomain.main-domain.example.local
+      paths:
+        - path: /
+
+  jwt:
+    enabled: false
+    issuer: issuer-foo
+    jwksUri: https://example.com/.well-known/jwks.json

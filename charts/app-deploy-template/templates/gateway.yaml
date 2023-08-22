@@ -1,0 +1,37 @@
+
+{{- if .Values.istio.enabled -}}
+{{- $fullName := include "app-deploy-template.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "app-deploy-template.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    tls:
+      httpsRedirect: {{ .Values.istio.virtualservice.httpsRedirect }}
+    hosts:
+    {{- range .Values.istio.virtualservice.hosts }}
+    - {{.host}}
+    {{- end }}
+  - port:
+      number: 443
+      name: https
+      protocol: HTTP
+    hosts:
+    {{- range .Values.istio.virtualservice.hosts }}
+    - {{.host}}
+    {{- end }}
+{{- end }}

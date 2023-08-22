@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app-deploy-template.fullname" . }}
+  labels:
+    {{- include "app-deploy-template.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: {{ .Values.service.servicePort.name }}
+      port: {{ .Values.service.servicePort.port }}
+      targetPort: {{ .Values.service.servicePort.targetPort }}
+      protocol: {{ .Values.service.servicePort.protocol }}
+    {{- toYaml .Values.service.additionalServicePorts | nindent 4 }}
+  selector:
+    {{- include "app-deploy-template.selectorLabels" . | nindent 4 }}

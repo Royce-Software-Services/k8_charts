@@ -1,0 +1,189 @@
+---
+# Source: app-deploy-template/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nonprod-etico-proxy
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+---
+# Source: app-deploy-template/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: RELEASE-NAME-app-deploy-template
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: https
+  selector:
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+---
+# Source: app-deploy-template/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-app-deploy-template
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: app-deploy-template
+      app.kubernetes.io/instance: RELEASE-NAME
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: app-deploy-template
+        app.kubernetes.io/instance: RELEASE-NAME
+        sidecar.istio.io/inject: "true"
+    spec:
+      serviceAccountName: nonprod-etico-proxy
+      securityContext:
+        runAsUser: 0
+      containers:
+        - name: app-deploy-template
+          securityContext:
+            {}
+          image: "232333271096.dkr.ecr.us-east-1.amazonaws.com/etico-proxy:latest"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: "6"
+              memory: 8192Mi
+            requests:
+              cpu: "1"
+              memory: 1024Mi
+          env:
+            - name: LOG_DIR
+              value: "/tmp/logs"
+          envFrom:
+            []
+          volumeMounts:
+            []
+      volumes:
+        []
+---
+# Source: app-deploy-template/templates/hpa.yaml
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: RELEASE-NAME-app-deploy-template
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: RELEASE-NAME-app-deploy-template
+  minReplicas: 1
+  maxReplicas: 100
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        targetAverageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        targetAverageUtilization: 80
+---
+# Source: app-deploy-template/templates/gateway.yaml
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: RELEASE-NAME-app-deploy-template
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - eticoproxy.dev.pavemobility.com
+---
+# Source: app-deploy-template/templates/virtualservice.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-app-deploy-template
+  labels:
+    helm.sh/chart: app-deploy-template-0.1.1
+    app.kubernetes.io/name: app-deploy-template
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+    app: etico-proxy
+    version: v1
+spec:
+  hosts:
+    - eticoproxy.dev.pavemobility.com
+  gateways:
+  - RELEASE-NAME-app-deploy-template
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host:  RELEASE-NAME-app-deploy-template
+            port:
+              number: 80

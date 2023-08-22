@@ -1,0 +1,7 @@
+namespace: demo-domain1
+namePrefix: kustomize-
+commonLabels:
+  app: poc-demo
+
+resources:
+  - "manifest.yml"
